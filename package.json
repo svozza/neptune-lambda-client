@@ -1,7 +1,7 @@
 {
   "name": "neptune-lambda-client",
   "version": "0.1.0",
-  "description": "Gremlin client to robust query AWS Neptune from AWS Lambda",
+  "description": "Gremlin client to robustly query AWS Neptune from AWS Lambda",
   "main": "index.js",
   "scripts": {
     "test": "mocha"
