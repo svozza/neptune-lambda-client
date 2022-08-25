@@ -1,4 +1,3 @@
-//
 const aws4 = require('aws4');
 const gremlin = require('gremlin');
 const retry = require('async-retry');
@@ -7,10 +6,10 @@ const traversal = gremlin.process.AnonymousTraversalSource.traversal;
 const {driver: {DriverRemoteConnection}} = gremlin;
 
 function createHeaders(host, port, path, options) {
-
     if (!host || !port) {
         throw new Error('Host and port are required');
     }
+
     const accessKeyId = options.accessKey || process.env.AWS_ACCESS_KEY_ID;
     const secretAccessKey = options.secretKey || process.env.AWS_SECRET_ACCESS_KEY;
     const sessionToken = options.sessionToken || process.env.AWS_SESSION_TOKEN;
