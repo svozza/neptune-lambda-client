@@ -33,74 +33,76 @@ function createHeaders(host, port, path, options) {
     }).headers;
 }
 
-module.exports = (host, port, {useIam = true} = {useIam: true}) => {
-    let conn = null;
-    let g = null;
+module.exports = {
+    create: function(host, port, {useIam = true} = {useIam: true}) {
+        let conn = null;
+        let g = null;
 
-    const path = "/gremlin"
-    const url = `wss://${host}:${port}${path}`
+        const path = "/gremlin"
+        const url = `wss://${host}:${port}${path}`
 
-    const createRemoteConnection = () => {
+        const createRemoteConnection = () => {
 
-        const c = new DriverRemoteConnection(
-            url,
-            {
-                mimeType: 'application/vnd.gremlin-v2.0+json',
-                pingEnabled: false,
-                headers: useIam ? createHeaders(host, port, path, {}) : {}
+            const c = new DriverRemoteConnection(
+                url,
+                {
+                    mimeType: 'application/vnd.gremlin-v2.0+json',
+                    pingEnabled: false,
+                    headers: useIam ? createHeaders(host, port, path, {}) : {}
+                });
+
+            c._client._connection.on('log', message => {
+                console.info(`connection message - ${message}`);
             });
 
-        c._client._connection.on('log', message => {
-            console.info(`connection message - ${message}`);
-        });
-
-        c._client._connection.on('close', (code, message) => {
-            console.info(`close - ${code} ${message}`);
-            if (code == 1006){
-                console.error('Connection closed prematurely');
-                throw new Error('Connection closed prematurely');
-            }
-        });
-
-        return c;
-    };
-
-    const createGraphTraversalSource = conn => {
-        return traversal().withRemote(conn);
-    };
-
-    return {
-        query: async f => {
-            if (conn == null){
-                console.info('Initializing connection')
-                conn = createRemoteConnection();
-                g = createGraphTraversalSource(conn);
-            }
-
-            return retry(async (bail, count) => {
-                return f(g).catch(err => {
-                    if(count > 0) console.log('Retry attempt no: ' + count);
-                    if (err.message.startsWith('WebSocket is not open')){
-                        console.warn('Reopening connection');
-                        conn.close();
-                        conn = createRemoteConnection();
-                        g = createGraphTraversalSource(conn);
-                        throw err;
-                    } else if (err.message.includes('ConcurrentModificationException')){
-                        console.warn('Retrying query because of ConcurrentModificationException');
-                        throw err;
-                    } else if (err.message.includes('ReadOnlyViolationException')){
-                        console.warn('Retrying query because of ReadOnlyViolationException');
-                        throw err;
-                    } else {
-                        console.warn('Unrecoverable error: ' + err);
-                        return bail(err);
-                    }
-                })
-            }, {
-                factor: 1,
-                retries: 5
+            c._client._connection.on('close', (code, message) => {
+                console.info(`close - ${code} ${message}`);
+                if (code == 1006){
+                    console.error('Connection closed prematurely');
+                    throw new Error('Connection closed prematurely');
+                }
             });
+
+            return c;
+        };
+
+        const createGraphTraversalSource = conn => {
+            return traversal().withRemote(conn);
+        };
+
+        return {
+            query: async f => {
+                if (conn == null){
+                    console.info('Initializing connection')
+                    conn = createRemoteConnection();
+                    g = createGraphTraversalSource(conn);
+                }
+
+                return retry(async (bail, count) => {
+                    return f(g).catch(err => {
+                        if(count > 0) console.log('Retry attempt no: ' + count);
+                        if (err.message.startsWith('WebSocket is not open')){
+                            console.warn('Reopening connection');
+                            conn.close();
+                            conn = createRemoteConnection();
+                            g = createGraphTraversalSource(conn);
+                            throw err;
+                        } else if (err.message.includes('ConcurrentModificationException')){
+                            console.warn('Retrying query because of ConcurrentModificationException');
+                            throw err;
+                        } else if (err.message.includes('ReadOnlyViolationException')){
+                            console.warn('Retrying query because of ReadOnlyViolationException');
+                            throw err;
+                        } else {
+                            console.warn('Unrecoverable error: ' + err);
+                            return bail(err);
+                        }
+                    })
+                }, {
+                    factor: 1,
+                    retries: 5
+                });
+            }
         }
     }
 }
