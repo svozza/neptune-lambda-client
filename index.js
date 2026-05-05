@@ -5,6 +5,8 @@ const retry = require('async-retry');
 const traversal = gremlin.process.AnonymousTraversalSource.traversal;
 const {driver: {DriverRemoteConnection}} = gremlin;
 
+const RETRYABLE_ERRORS = ['ConcurrentModificationException', 'ReadOnlyViolationException'];
+
 function createHeaders(host, port, path, options) {
     if (!host || !port) {
         throw new Error('Host and port are required');
@@ -34,12 +36,12 @@ function createHeaders(host, port, path, options) {
 }
 
 module.exports = {
-    create: function(host, port, {useIam = true} = {useIam: true}) {
+    create: function(host, port, {useIam = true, protocol = 'wss'} = {}) {
         let conn = null;
         let g = null;
 
         const path = "/gremlin"
-        const url = `wss://${host}:${port}${path}`
+        const url = `${protocol}://${host}:${port}${path}`
 
         const createRemoteConnection = () => {
 
@@ -50,6 +52,10 @@ module.exports = {
                     pingEnabled: false,
                     headers: useIam ? createHeaders(host, port, path, {}) : {}
                 });
+
+            // gremlin opens the WebSocket eagerly on construction; swallow a potential
+            // orphan rejection here. The real error resurfaces on the next submit().
+            c.open().catch(() => {});
 
             c._client._connection.on('log', message => {
                 console.info(`connection message - ${message}`);
@@ -87,21 +93,25 @@ module.exports = {
                             conn = createRemoteConnection();
                             g = createGraphTraversalSource(conn);
                             throw err;
-                        } else if (err.message.includes('ConcurrentModificationException')){
-                            console.warn('Retrying query because of ConcurrentModificationException');
-                            throw err;
-                        } else if (err.message.includes('ReadOnlyViolationException')){
-                            console.warn('Retrying query because of ReadOnlyViolationException');
-                            throw err;
-                        } else {
-                            console.warn('Unrecoverable error: ' + err);
-                            return bail(err);
                         }
+                        if (RETRYABLE_ERRORS.some(name => err.message.includes(name))) {
+                            console.warn('Retrying query: ' + err.message);
+                            throw err;
+                        }
+                        console.warn('Unrecoverable error: ' + err);
+                        return bail(err);
                     })
                 }, {
                     factor: 1,
                     retries: 5
                 });
+            },
+            close: async () => {
+                if (conn != null) {
+                    await conn.close();
+                    conn = null;
+                    g = null;
+                }
             }
         }
     }
