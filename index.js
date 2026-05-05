@@ -48,7 +48,9 @@ module.exports = {
             const c = new DriverRemoteConnection(
                 url,
                 {
-                    mimeType: 'application/vnd.gremlin-v2.0+json',
+                    // Lambda freezes between invocations; heartbeats fired just before freeze
+                    // time out after thaw, causing noisy disconnects. Our reconnect-on-error path
+                    // handles dead connections, so skip the liveness pings.
                     pingEnabled: false,
                     headers: useIam ? createHeaders(host, port, path, {}) : {}
                 });
@@ -102,8 +104,11 @@ module.exports = {
                         return bail(err);
                     })
                 }, {
-                    factor: 1,
-                    retries: 5
+                    retries: 5,
+                    factor: 2,
+                    minTimeout: 1000,
+                    maxTimeout: 10000,
+                    randomize: true
                 });
             },
             close: async () => {
