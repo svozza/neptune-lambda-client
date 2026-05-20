@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, onTestFinished, vi } from 'vitest';
-import gremlinClient from '../index.js';
-import { startFakeGremlin } from './helpers/gremlin-server.mjs';
+import { create } from '../index.js';
+import { startFakeGremlin } from './helpers/gremlin-server.js';
 
 let server;
 
@@ -13,7 +13,7 @@ afterEach(async () => {
 });
 
 function createClient(opts = {}) {
-    const client = gremlinClient.create('localhost', server.port, { useIam: false, protocol: 'ws', ...opts });
+    const client = create('localhost', server.port, { useIam: false, protocol: 'ws', ...opts });
     onTestFinished(() => client.close());
     return client;
 }
