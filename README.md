@@ -12,9 +12,9 @@ This client is instantiated with a factory function and exposes a `query` functi
 argument: a function that uses the Gremlin `g` object. It also exposes a `close` function for graceful shutdown.
 
 ```js
-const gremlinClient = require('neptune-lambda-client');
+import { create } from 'neptune-lambda-client';
 
-const {query} = gremlinClient.create('neptune-db-url', '8182', { useIam: true });
+const { query } = create('neptune-db-url', '8182', { useIam: true });
 
 async function getNode(id) {
     return query(async g => g.V(id).next().then(x => x.value));
