@@ -6,6 +6,15 @@ reestablish a connection to the database if the web socket connection closes and
 retry (up to 5 times, with exponential backoff and jitter) when it encounters `ConcurrentModificationException`
 and `ReadOnlyViolationException` errors.
 
+## Installation
+
+`gremlin` is a peer dependency — install it alongside the client so your application controls the
+exact version that talks to your Neptune cluster:
+
+```sh
+npm install neptune-lambda-client gremlin
+```
+
 ## Usage
 
 This client is instantiated with a factory function and exposes a `query` function that accepts a single

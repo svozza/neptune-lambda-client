@@ -1,6 +1,6 @@
 {
   "name": "neptune-lambda-client",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Gremlin client to robustly query AWS Neptune from AWS Lambda",
   "type": "module",
   "exports": {
@@ -29,10 +29,13 @@
   "homepage": "https://github.com/svozza/neptune-lambda-client#readme",
   "dependencies": {
     "async-retry": "1.3.3",
-    "aws4": "1.11.0",
-    "gremlin": "3.5.2"
+    "aws4": "1.11.0"
+  },
+  "peerDependencies": {
+    "gremlin": "^3.5.0"
   },
   "devDependencies": {
+    "gremlin": "3.5.2",
     "testcontainers": "^12.0.0",
     "vitest": "^2.1.9",
     "ws": "^8.18.0"
