@@ -1,5 +1,6 @@
 import aws4 from 'aws4';
 import gremlin from 'gremlin';
+import { PartitionStrategy } from 'gremlin/lib/process/traversal-strategy.js';
 import retry from 'async-retry';
 
 const traversal = gremlin.process.AnonymousTraversalSource.traversal;
@@ -35,7 +36,7 @@ function createHeaders(host, port, path, options) {
     }).headers;
 }
 
-export function create(host, port, {useIam = true, protocol = 'wss'} = {}) {
+export function create(host, port, {useIam = true, protocol = 'wss', partition} = {}) {
     let conn = null;
     let g = null;
 
@@ -74,7 +75,8 @@ export function create(host, port, {useIam = true, protocol = 'wss'} = {}) {
     };
 
     const createGraphTraversalSource = conn => {
-        return traversal().withRemote(conn);
+        const g = traversal().withRemote(conn);
+        return partition ? g.withStrategies(new PartitionStrategy(partition)) : g;
     };
 
     return {

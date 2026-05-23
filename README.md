@@ -21,6 +21,27 @@ async function getNode(id) {
 }
 ```
 
+### Partition strategy
+
+To scope every query through the client to a Gremlin
+[`PartitionStrategy`](https://tinkerpop.apache.org/docs/current/reference/#partitionstrategy)
+— useful for multi-tenant graphs and per-suite test isolation — pass a `partition`
+option. Its fields are forwarded directly to `PartitionStrategy`:
+
+```js
+const { query } = create('neptune-db-url', '8182', {
+    useIam: true,
+    partition: {
+        partitionKey: '_partition',
+        writePartition: 'tenant-a',
+        readPartitions: ['tenant-a', 'shared'],
+    },
+});
+```
+
+The strategy is reapplied automatically when the client reconnects after a dropped
+WebSocket, so partition isolation holds across the full Lambda lifetime.
+
 ## Known limitations
 
 Per the [AWS Neptune Lambda guidance](https://docs.aws.amazon.com/neptune/latest/userguide/lambda-functions-examples.html#lambda-functions-examples-javascript),
