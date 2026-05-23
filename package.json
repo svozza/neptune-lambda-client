@@ -6,6 +6,9 @@
   "exports": {
     ".": "./index.js"
   },
+  "files": [
+    "index.js"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
